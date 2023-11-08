@@ -98,7 +98,7 @@ def int_extractor(string):
     return int(int_string)
 
 def main():
-    query = input("What do you want to exchange for your kidneys? ")
+    query = input("Please enter the product you want to purchase: ")
     results = []
     
     results.extend(get_amazon_results(query))
