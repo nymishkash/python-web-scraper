@@ -79,6 +79,10 @@ jobs:
           echo "Resolved deployment manifest:"
           cat k8s/deployment-resolved.yaml
           
+          # Delete old deployment if it exists (to free up resources)
+          kubectl delete deployment web-scraper --ignore-not-found=true
+          sleep 2
+          
           # Apply Kubernetes manifests
           kubectl apply -f k8s/deployment-resolved.yaml
           kubectl apply -f k8s/service.yaml
@@ -89,6 +93,11 @@ jobs:
           # Check initial pod status
           echo "Initial pod status:"
           kubectl get pods -l app=web-scraper
+          
+          # Check node resources
+          echo ""
+          echo "Node resources:"
+          kubectl top nodes 2>/dev/null || kubectl describe nodes | grep -A 5 "Allocated resources"
       
       # Stage 7: Verify pod status
       - name: Verify deployment
