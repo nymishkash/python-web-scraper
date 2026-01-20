@@ -35,8 +35,17 @@ jobs:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
       
-      - name: Verify gcloud authentication
+      - name: Authenticate gcloud explicitly
         run: |
+          # Write service account key to file using printf to handle special characters
+          printf '%s\n' "${{ secrets.GCP_SA_KEY }}" > /tmp/gcp-key.json
+          # Verify JSON is valid
+          python3 -m json.tool /tmp/gcp-key.json > /dev/null || (echo "Invalid JSON in service account key" && exit 1)
+          # Authenticate with service account
+          gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+          # Set project
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          # Verify authentication
           gcloud auth list
           gcloud config get-value project
       
