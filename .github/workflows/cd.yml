@@ -27,43 +27,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # Stage 2: Setup gcloud CLI (required for GKE auth)
+      # Stage 2: Authenticate to GCP
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      # Stage 3: Setup gcloud CLI
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
-      
-      - name: Authenticate gcloud explicitly
-        run: |
-          # Write service account key to file using Python to properly handle JSON escape sequences
-          python3 << 'EOF'
-          import json
-          import os
-          sa_key = os.environ.get('GCP_SA_KEY')
-          if not sa_key:
-              print("Error: GCP_SA_KEY secret not found")
-              exit(1)
-          # Parse and re-serialize to ensure proper formatting
-          try:
-              sa_json = json.loads(sa_key)
-              with open('/tmp/gcp-key.json', 'w') as f:
-                  json.dump(sa_json, f)
-              print("Service account key written successfully")
-          except json.JSONDecodeError as e:
-              print(f"Invalid JSON in service account key: {e}")
-              exit(1)
-          EOF
-          env:
-            GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          # Authenticate with service account
-          gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
-          # Set project
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-          # Verify authentication
-          gcloud auth list
-          gcloud config get-value project
       
       - name: Install gke-gcloud-auth-plugin
         run: |
@@ -72,13 +46,13 @@ jobs:
           export PATH="$PATH:$(gcloud --format='value(installation.sdk_root)')/bin"
           echo "$(gcloud --format='value(installation.sdk_root)')/bin" >> $GITHUB_PATH
       
-      # Stage 3: Setup kubectl
+      # Stage 4: Setup kubectl
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
       
-      # Stage 4: Configure kubeconfig
+      # Stage 5: Configure kubeconfig
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
@@ -90,7 +64,7 @@ jobs:
           kubectl config view
           kubectl cluster-info
       
-      # Stage 4: Deploy manifests
+      # Stage 6: Deploy manifests
       - name: Deploy to Kubernetes
         env:
           IMAGE_TAG: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.event.workflow_run.head_sha || github.sha }}
@@ -102,7 +76,7 @@ jobs:
           kubectl apply -f k8s/deployment-resolved.yaml
           kubectl apply -f k8s/service.yaml
       
-      # Stage 5: Verify pod status
+      # Stage 7: Verify pod status
       - name: Verify deployment
         run: |
           echo "Waiting for deployment to be ready..."
@@ -117,7 +91,7 @@ jobs:
           echo "Deployment details:"
           kubectl describe deployment web-scraper
       
-      # Stage 6: Optional DAST (Dummy/Conceptual)
+      # Stage 8: Optional DAST (Dummy/Conceptual)
       - name: DAST - Conceptual Security Test
         run: |
           echo "=== DAST (Dynamic Application Security Testing) ==="
