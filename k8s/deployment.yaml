@@ -25,5 +25,5 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "500m"
-        command: ["python", "-c", "from scraper.main import int_extractor; print('Web scraper container is running')"]
+        command: ["sh", "-c", "python -c 'from scraper.main import int_extractor; print(\"Web scraper container is running\")' && sleep infinity"]
       restartPolicy: Always

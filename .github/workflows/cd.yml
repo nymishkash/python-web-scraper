@@ -69,25 +69,61 @@ jobs:
         env:
           IMAGE_TAG: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
+          # Verify image exists (optional check)
+          echo "Deploying image: ${IMAGE_TAG}"
+          
           # Substitute IMAGE_TAG in deployment.yaml
           sed "s|\${IMAGE_TAG}|${IMAGE_TAG}|g" k8s/deployment.yaml > k8s/deployment-resolved.yaml
+          
+          # Show the resolved deployment for debugging
+          echo "Resolved deployment manifest:"
+          cat k8s/deployment-resolved.yaml
           
           # Apply Kubernetes manifests
           kubectl apply -f k8s/deployment-resolved.yaml
           kubectl apply -f k8s/service.yaml
+          
+          # Wait a moment for pod to start
+          sleep 5
+          
+          # Check initial pod status
+          echo "Initial pod status:"
+          kubectl get pods -l app=web-scraper
       
       # Stage 7: Verify pod status
       - name: Verify deployment
         run: |
           echo "Waiting for deployment to be ready..."
-          kubectl rollout status deployment/web-scraper --timeout=300s
+          kubectl rollout status deployment/web-scraper --timeout=300s || {
+            echo "Deployment rollout failed or timed out. Checking pod status..."
+            kubectl get pods -l app=web-scraper
+            echo ""
+            echo "Pod events:"
+            POD_NAME=$(kubectl get pods -l app=web-scraper -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+            if [ -n "$POD_NAME" ]; then
+              kubectl describe pod $POD_NAME
+              echo ""
+              echo "Pod logs:"
+              kubectl logs $POD_NAME --tail=50 || echo "Could not retrieve logs"
+            else
+              echo "No pods found"
+            fi
+            echo ""
+            echo "Deployment details:"
+            kubectl describe deployment web-scraper
+            exit 1
+          }
           
+          echo "✓ Deployment successful!"
+          echo ""
           echo "Pod status:"
           kubectl get pods -l app=web-scraper
           
+          echo ""
           echo "Service status:"
           kubectl get svc web-scraper-service
           
+          echo ""
           echo "Deployment details:"
           kubectl describe deployment web-scraper
       
