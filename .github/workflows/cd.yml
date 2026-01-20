@@ -79,9 +79,17 @@ jobs:
           echo "Resolved deployment manifest:"
           cat k8s/deployment-resolved.yaml
           
-          # Delete old deployment if it exists (to free up resources)
+          # Clean up stuck pods and old deployment (to free up resources)
+          echo "Cleaning up old deployments and stuck pods..."
           kubectl delete deployment web-scraper --ignore-not-found=true
-          sleep 2
+          kubectl delete pods -l app=web-scraper --field-selector=status.phase=Pending --ignore-not-found=true
+          sleep 3
+          
+          # Check available resources
+          echo "Checking cluster resources..."
+          kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.capacity.cpu,MEMORY:.status.capacity.memory
+          echo ""
+          kubectl get pods --all-namespaces -o wide
           
           # Apply Kubernetes manifests
           kubectl apply -f k8s/deployment-resolved.yaml
@@ -94,10 +102,18 @@ jobs:
           echo "Initial pod status:"
           kubectl get pods -l app=web-scraper
           
-          # Check node resources
+          # Check node resources and other pods
           echo ""
           echo "Node resources:"
-          kubectl top nodes 2>/dev/null || kubectl describe nodes | grep -A 5 "Allocated resources"
+          kubectl describe nodes | grep -A 10 "Allocated resources" || echo "Could not get node details"
+          
+          echo ""
+          echo "All pods in cluster:"
+          kubectl get pods --all-namespaces
+          
+          echo ""
+          echo "Node capacity:"
+          kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.capacity.cpu,MEMORY:.status.capacity.memory
       
       # Stage 7: Verify pod status
       - name: Verify deployment
