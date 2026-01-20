@@ -37,10 +37,26 @@ jobs:
       
       - name: Authenticate gcloud explicitly
         run: |
-          # Write service account key to file using printf to handle special characters
-          printf '%s\n' "${{ secrets.GCP_SA_KEY }}" > /tmp/gcp-key.json
-          # Verify JSON is valid
-          python3 -m json.tool /tmp/gcp-key.json > /dev/null || (echo "Invalid JSON in service account key" && exit 1)
+          # Write service account key to file using Python to properly handle JSON escape sequences
+          python3 << 'EOF'
+          import json
+          import os
+          sa_key = os.environ.get('GCP_SA_KEY')
+          if not sa_key:
+              print("Error: GCP_SA_KEY secret not found")
+              exit(1)
+          # Parse and re-serialize to ensure proper formatting
+          try:
+              sa_json = json.loads(sa_key)
+              with open('/tmp/gcp-key.json', 'w') as f:
+                  json.dump(sa_json, f)
+              print("Service account key written successfully")
+          except json.JSONDecodeError as e:
+              print(f"Invalid JSON in service account key: {e}")
+              exit(1)
+          EOF
+          env:
+            GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           # Authenticate with service account
           gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
           # Set project
