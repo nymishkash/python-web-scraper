@@ -47,6 +47,8 @@ htmlcov/
 # Kubernetes
 *.kubeconfig
 kubeconfig
+kubeconfig.yaml
+kubeconfig.b64
 
 # Logs
 *.log
