@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-scraper
+  labels:
+    app: web-scraper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-scraper
+  template:
+    metadata:
+      labels:
+        app: web-scraper
+    spec:
+      containers:
+      - name: scraper
+        image: ${IMAGE_TAG}
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        command: ["python", "-c", "from scraper.main import int_extractor; print('Web scraper container is running')"]
+      restartPolicy: Always
