@@ -83,29 +83,27 @@ jobs:
       - name: Check for High/Critical vulnerabilities
         run: |
           if [ -f pip-audit-report.json ]; then
-            python3 << 'EOF'
-import json
-import sys
-
-try:
-    with open('pip-audit-report.json', 'r') as f:
-        data = json.load(f)
-        vulns = data.get('vulnerabilities', [])
-        # Filter out filelock (dev tool dependency, not app dependency)
-        high_critical = [v for v in vulns 
-                       if v.get('severity', '').upper() in ['HIGH', 'CRITICAL']
-                       and v.get('name', '').lower() != 'filelock']
-        if high_critical:
-            print('Found High/Critical vulnerabilities in application dependencies:')
-            for v in high_critical:
-                print(f"  - {v.get('name')}: {v.get('severity')}")
-            sys.exit(1)
-        else:
-            print('No High/Critical vulnerabilities in application dependencies.')
-except Exception as e:
-    print(f'Error parsing audit report: {e}')
-    sys.exit(0)
-EOF
+            python3 <<EOF
+          import json
+          import sys
+          try:
+              with open('pip-audit-report.json', 'r') as f:
+                  data = json.load(f)
+                  vulns = data.get('vulnerabilities', [])
+                  high_critical = [v for v in vulns 
+                                 if v.get('severity', '').upper() in ['HIGH', 'CRITICAL']
+                                 and v.get('name', '').lower() != 'filelock']
+                  if high_critical:
+                      print('Found High/Critical vulnerabilities in application dependencies:')
+                      for v in high_critical:
+                          print(f"  - {v.get('name')}: {v.get('severity')}")
+                      sys.exit(1)
+                  else:
+                      print('No High/Critical vulnerabilities in application dependencies.')
+          except Exception as e:
+              print(f'Error parsing audit report: {e}')
+              sys.exit(0)
+          EOF
             if [ $? -ne 0 ]; then
               echo "::error::High or Critical vulnerabilities detected. Build failed."
               exit 1
