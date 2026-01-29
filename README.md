@@ -122,8 +122,6 @@ project-root/
 - `DOCKERHUB_USERNAME` - DockerHub username
 - `DOCKERHUB_TOKEN` - DockerHub access token
 
-> ⚠️ **Never hardcode secrets** - Always use GitHub Secrets
-
 ---
 
 ## 🚀 CD Pipeline (`.github/workflows/cd.yml`)
@@ -167,7 +165,6 @@ project-root/
 - Validates pod health
 - Documents approach for non-HTTP services
 
-> **Note**: Traditional DAST tools (OWASP ZAP, Burp Suite) target HTTP endpoints. Since this is a CLI scraper, DAST is demonstrated at a conceptual level to show awareness of runtime security testing.
 
 ### Required GitHub Secrets
 
@@ -176,16 +173,6 @@ project-root/
 ---
 
 ## ☸️ Kubernetes Deployment
-
-### Scope (Intentionally Simple)
-
-- **Single Deployment** - 1 replica
-- **Single Service** - ClusterIP type
-- **No Ingress** - Internal access only
-- **No Autoscaling** - Fixed replica count
-- **No Helm** - Plain YAML manifests
-
-> This is a **delivery demo**, not infrastructure engineering. Focus is on deployment verification, not scale.
 
 ### Resources
 
@@ -206,16 +193,6 @@ You can use:
 - **kind** (local Kubernetes)
 - **minikube** (local development)
 - **Cloud free-tier cluster** (GKE, EKS, AKS)
-
-The evaluator cares about:
-- ✅ Pipeline logic
-- ✅ Deployment verification
-- ✅ Clear explanation
-
-The evaluator does NOT care about:
-- ❌ High availability
-- ❌ Load testing
-- ❌ Production-grade infrastructure
 
 ---
 
@@ -294,56 +271,3 @@ kubectl get svc
 | Verify | Pod won't start | Check pod logs: `kubectl logs <pod-name>` |
 
 ---
-
-## 🎓 Viva Defense Points
-
-### Why CI and CD are Separate?
-
-**Answer**: Separation of concerns. CI validates code quality, security, and produces trusted artifacts. CD consumes those artifacts and deploys them. This reflects real-world promotion-based delivery where artifacts are built once and deployed many times.
-
-### Why Kubernetes is in CD, not CI?
-
-**Answer**: Deployment is a delivery concern, not a build concern. CI focuses on validation and artifact creation. CD focuses on operational deployment. Mixing them would violate single responsibility and make pipelines harder to maintain.
-
-### Why is Deployment Simple?
-
-**Answer**: This project demonstrates operational readiness and deployment maturity, not infrastructure engineering. A single replica deployment proves the application can run in Kubernetes. Production concerns (HA, autoscaling) are out of scope.
-
-### Why is DAST Optional?
-
-**Answer**: Traditional DAST targets HTTP endpoints. This CLI scraper doesn't expose HTTP services. The DAST stage demonstrates awareness of runtime security testing at a conceptual level, which is acceptable when explained.
-
-### Why is a Scraper Valid for This Project?
-
-**Answer**: 
-- **Stateless** → Perfect for containers
-- **Real dependencies** → Strong SCA story (requests, beautifulsoup4)
-- **Network-facing** → Security relevance
-- **Testable** → Unit tests validate core logic
-- **Simple** → Focus stays on CI/CD, not app complexity
-
----
-
-## 🔒 Security Best Practices
-
-1. **No secrets in code** - All secrets via GitHub Secrets
-2. **Non-root container** - Dockerfile uses non-root user
-3. **Multi-stage build** - Minimal final image
-4. **Security scanning** - SAST, SCA, and container scanning
-5. **Fail on High/Critical** - Security gates prevent vulnerable deployments
-
----
-
-## 📝 License
-
-This project is for educational/demonstration purposes.
-
----
-
-## 🤝 Contributing
-
-This is a DevOps demonstration project. For questions or improvements, please open an issue.
-
----
-
-**Last Updated**: 2024
